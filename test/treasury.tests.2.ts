@@ -26,8 +26,32 @@ const send1EthFromTo = async (owner: SignerWithAddress, treasury: Treasury) => {
 };
 
 describe("Treasury", async () => {
+  test('isMember() iwthout joining, returns false()', async () => { 
+    const { treasury, owner,otherAccount } = await deploy();
+    expect(
+          await treasury.isMember(otherAccount.address))
+          .to.eq(false)
+   })
+
+  test('join(), with needed payment, can be verified with isMember()', async () => { 
+    const { treasury, owner,otherAccount } = await deploy();
+
+    await treasury
+      .connect(otherAccount)
+      .join({value:parseEther('0.1')});
+
+    expect(await treasury.isMember(otherAccount.address))
+          .to.eq(true)
+   })
+  test('join(), with below threshold payment payment, revets with message()', async () => { 
+    const { treasury, owner,otherAccount } = await deploy();
+
+    await expect( treasury.join({value:parseEther('0.01')}))
+            .to.revertedWithCustomError(treasury,"NotPaid")
+
+   })
   test("receive(), with 1 eth sent, can be received()", async function () {
-    const { treasury, owner } = await deploy();
+    const { treasury, owner,otherAccount } = await deploy();
 
     await send1EthFromTo(owner, treasury);
 
@@ -35,7 +59,7 @@ describe("Treasury", async () => {
     expect(formatEther(balance)).to.eq("1.0");
   });
   test("getBalance(), 1 eth sent, shows 1 eth", async function () {
-    const { treasury, owner } = await deploy();
+    const { treasury, owner,otherAccount } = await deploy();
 
     await send1EthFromTo(owner, treasury);
 
